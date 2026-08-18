@@ -1,0 +1,2677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Guardrail — Claude Code Prompt Handbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e14;
+    --surface:#0e131e;
+    --surface-2:#131a28;
+    --surface-3:#171f30;
+    --border:#212a3d;
+    --border-soft:#1a2233;
+    --text:#e8ecf2;
+    --text-dim:#8c96ac;
+    --text-faint:#576079;
+    --accent:#4fd6c4;
+    --accent-dim:#3aa696;
+    --accent-soft:rgba(79,214,196,0.10);
+    --warn:#f5b942;
+    --warn-soft:rgba(245,185,66,0.10);
+    --danger:#ef6f6f;
+    --radius:10px;
+    --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: 'Inter', -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  ::selection{background:var(--accent-soft); color:var(--accent);}
+  a{color:var(--accent);}
+
+  /* scrollbars */
+  ::-webkit-scrollbar{width:10px; height:10px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--border); border-radius:8px;}
+  ::-webkit-scrollbar-thumb:hover{background:var(--text-faint);}
+
+  .app{
+    display:flex;
+    min-height:100vh;
+  }
+
+  /* ---------------- SIDEBAR ---------------- */
+  .sidebar{
+    width:300px;
+    flex-shrink:0;
+    background:var(--surface);
+    border-right:1px solid var(--border-soft);
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    position:sticky;
+    top:0;
+  }
+  .brand{
+    padding:22px 20px 16px 20px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .brand-mark{
+    font-family:var(--mono);
+    font-weight:600;
+    font-size:15px;
+    color:var(--text);
+    display:flex;
+    align-items:baseline;
+    gap:2px;
+  }
+  .brand-mark .prompt-char{color:var(--accent);}
+  .brand-mark .cursor{
+    display:inline-block;
+    width:8px; height:15px;
+    background:var(--accent);
+    margin-left:4px;
+    animation:blink 1.1s steps(1) infinite;
+  }
+  @keyframes blink{ 50%{ opacity:0; } }
+  .brand-sub{
+    font-size:11.5px;
+    color:var(--text-faint);
+    margin-top:6px;
+    letter-spacing:.04em;
+  }
+
+  .search-wrap{
+    padding:14px 16px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .search-box{
+    position:relative;
+  }
+  .search-box svg{
+    position:absolute; left:10px; top:50%; transform:translateY(-50%);
+    width:14px; height:14px; color:var(--text-faint); pointer-events:none;
+  }
+  #search{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--text);
+    font-family:var(--sans);
+    font-size:13.5px;
+    padding:9px 34px 9px 32px;
+    outline:none;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  #search::placeholder{color:var(--text-faint);}
+  #search:focus{border-color:var(--accent-dim); background:var(--surface-3);}
+  .kbd{
+    position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    font-family:var(--mono); font-size:10.5px; color:var(--text-faint);
+    background:var(--surface); border:1px solid var(--border);
+    padding:2px 5px; border-radius:4px; pointer-events:none;
+  }
+
+  nav.groups{
+    flex:1;
+    overflow-y:auto;
+    padding:6px 10px 20px 10px;
+  }
+  .group{ margin-top:16px; }
+  .group:first-child{ margin-top:8px; }
+  .group-label{
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--text-faint);
+    padding:4px 10px 6px 10px;
+  }
+  .nav-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    width:100%;
+    text-align:left;
+    background:none;
+    border:none;
+    color:var(--text-dim);
+    padding:8px 10px;
+    border-radius:7px;
+    cursor:pointer;
+    font-family:var(--sans);
+    font-size:13px;
+    line-height:1.3;
+    transition:background .12s ease, color .12s ease;
+  }
+  .nav-item:hover{ background:var(--surface-2); color:var(--text); }
+  .nav-item.active{ background:var(--accent-soft); color:var(--accent); }
+  .nav-id{
+    font-family:var(--mono);
+    font-size:10px;
+    color:var(--text-faint);
+    background:var(--surface-3);
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:2px 5px;
+    flex-shrink:0;
+    min-width:38px;
+    text-align:center;
+  }
+  .nav-item.active .nav-id{ color:var(--accent); border-color:var(--accent-dim); }
+  .nav-item.hidden{ display:none; }
+  .group.hidden{ display:none; }
+
+  .sidebar-foot{
+    padding:14px 20px;
+    border-top:1px solid var(--border-soft);
+    font-size:11px;
+    color:var(--text-faint);
+    font-family:var(--mono);
+  }
+
+  /* ---------------- MAIN ---------------- */
+  .content{
+    flex:1;
+    min-width:0;
+    height:100vh;
+    overflow-y:auto;
+    scroll-behavior:smooth;
+  }
+  .topbar{
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 16px;
+    border-bottom:1px solid var(--border-soft);
+    background:var(--surface);
+    position:sticky; top:0; z-index:20;
+  }
+  .menu-btn{
+    background:var(--surface-2); border:1px solid var(--border);
+    color:var(--text); border-radius:8px; padding:8px 10px; cursor:pointer;
+  }
+
+  .hero{
+    padding:56px 48px 34px 48px;
+    border-bottom:1px solid var(--border-soft);
+    max-width:900px;
+  }
+  .hero-eyebrow{
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.14em;
+    color:var(--accent); text-transform:uppercase; margin-bottom:14px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .hero-eyebrow::before{
+    content:''; width:6px; height:6px; border-radius:50%; background:var(--accent);
+    box-shadow:0 0 8px var(--accent);
+  }
+  .hero h1{
+    font-family:var(--mono);
+    font-size:clamp(26px, 3.4vw, 38px);
+    line-height:1.15;
+    margin:0 0 16px 0;
+    font-weight:600;
+    letter-spacing:-.01em;
+  }
+  .hero h1 span{ color:var(--text-faint); }
+  .hero p{
+    color:var(--text-dim);
+    font-size:15px;
+    line-height:1.65;
+    max-width:640px;
+    margin:0 0 22px 0;
+  }
+  .hero-tags{ display:flex; gap:8px; flex-wrap:wrap; }
+  .pill{
+    font-family:var(--mono); font-size:11px; color:var(--text-dim);
+    border:1px solid var(--border); background:var(--surface-2);
+    padding:5px 10px; border-radius:20px;
+  }
+
+  .no-results{
+    padding:60px 48px;
+    color:var(--text-faint);
+    font-family:var(--mono);
+    font-size:14px;
+  }
+
+  .cards{
+    padding:8px 48px 80px 48px;
+    max-width:900px;
+  }
+  .content-group{ margin-top:8px; }
+  .content-group-title{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:44px 0 18px 0;
+    padding-bottom:10px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .content-group:first-child .content-group-title{ margin-top:30px; }
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border-soft);
+    border-radius:var(--radius);
+    margin-bottom:18px;
+    overflow:hidden;
+    scroll-margin-top:24px;
+    transition:border-color .15s ease;
+  }
+  .card:target, .card.flash{ border-color:var(--accent-dim); }
+  .card-head{
+    padding:18px 20px 14px 20px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+  }
+  .card-title-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .card-id{
+    font-family:var(--mono); font-size:10.5px; color:var(--accent);
+    background:var(--accent-soft); border:1px solid var(--accent-dim);
+    padding:2px 7px; border-radius:5px; flex-shrink:0;
+  }
+  .card-title{
+    font-family:var(--mono);
+    font-size:16px;
+    font-weight:600;
+    margin:0;
+  }
+  .card-blurb{
+    color:var(--text-dim);
+    font-size:13.5px;
+    line-height:1.55;
+    margin:8px 0 0 0;
+    max-width:600px;
+  }
+  .card-tags{ display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+  .tag{
+    font-family:var(--mono); font-size:10px; color:var(--text-faint);
+    border:1px solid var(--border); padding:2px 7px; border-radius:4px;
+  }
+
+  .card-actions{
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .copy-btn, .edit-btn{
+    flex-shrink:0;
+    display:flex; align-items:center; gap:6px;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    font-family:var(--mono);
+    font-size:11.5px;
+    padding:7px 11px;
+    border-radius:7px;
+    cursor:pointer;
+    transition:all .15s ease;
+    white-space:nowrap;
+  }
+  .copy-btn:hover{ border-color:var(--accent-dim); color:var(--accent); }
+  .copy-btn.copied{ border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+  .copy-btn svg, .edit-btn svg{ width:13px; height:13px; }
+  .edit-btn:hover{ border-color:var(--warn); color:var(--warn); }
+
+  /* ---------------- EDITOR MODAL ---------------- */
+  .modal-overlay{
+    display:none;
+    position:fixed; inset:0;
+    background:rgba(6,9,14,.72);
+    backdrop-filter:blur(2px);
+    z-index:100;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal-box{
+    width:100%;
+    max-width:720px;
+    max-height:86vh;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 24px 60px rgba(0,0,0,.5);
+    overflow:hidden;
+  }
+  .modal-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    padding:18px 20px;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .modal-head-title{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .modal-head h3{
+    font-family:var(--mono); font-size:15px; font-weight:600; margin:0;
+  }
+  .modal-hint{
+    font-size:12px; color:var(--text-dim); margin-top:8px; line-height:1.5; max-width:520px;
+  }
+  .modal-hint b{ color:var(--warn); font-weight:600; }
+  .modal-close{
+    flex-shrink:0;
+    background:var(--surface-2); border:1px solid var(--border);
+    color:var(--text-dim); border-radius:8px; width:30px; height:30px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .modal-close:hover{ color:var(--text); border-color:var(--text-faint); }
+  .modal-close svg{ width:14px; height:14px; }
+
+  .modal-body{
+    flex:1;
+    overflow-y:auto;
+    padding:0;
+    background:var(--surface-2);
+  }
+  #editorArea{
+    outline:none;
+    padding:20px;
+    font-family:var(--mono);
+    font-size:12.5px;
+    line-height:1.75;
+    color:#c7cee0;
+    white-space:pre-wrap;
+    word-break:break-word;
+    min-height:220px;
+  }
+  #editorArea .ph{
+    color:var(--warn);
+    background:var(--warn-soft);
+    border-radius:3px;
+    padding:0 2px;
+  }
+  #editorArea:focus .ph{ outline:1px dashed var(--warn); }
+
+  .modal-foot{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:14px 20px;
+    border-top:1px solid var(--border-soft);
+  }
+  .reset-link{
+    background:none; border:none; cursor:pointer;
+    font-family:var(--mono); font-size:11.5px; color:var(--text-faint);
+    padding:6px 4px;
+  }
+  .reset-link:hover{ color:var(--text-dim); }
+  .modal-copy-btn{
+    display:flex; align-items:center; gap:7px;
+    background:var(--accent-soft);
+    border:1px solid var(--accent-dim);
+    color:var(--accent);
+    font-family:var(--mono);
+    font-size:12.5px;
+    font-weight:600;
+    padding:9px 16px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .modal-copy-btn:hover{ background:var(--accent); color:#0a0e14; }
+  .modal-copy-btn svg{ width:14px; height:14px; }
+
+  @media (max-width:560px){
+    .modal-overlay{ padding:0; align-items:flex-end; }
+    .modal-box{ max-width:100%; max-height:92vh; border-radius:14px 14px 0 0; }
+  }
+
+  .card-body{
+    border-top:1px solid var(--border-soft);
+    background:var(--surface-2);
+  }
+  pre.prompt-block{
+    margin:0;
+    padding:18px 20px;
+    font-family:var(--mono);
+    font-size:12.5px;
+    line-height:1.7;
+    color:#c7cee0;
+    white-space:pre-wrap;
+    word-break:break-word;
+    max-height:420px;
+    overflow-y:auto;
+  }
+  pre.prompt-block .ph{
+    color:var(--warn);
+    background:var(--warn-soft);
+    border-radius:3px;
+    padding:0 2px;
+  }
+
+  mark{
+    background:var(--accent-soft);
+    color:var(--accent);
+    border-radius:2px;
+  }
+
+  footer.page-foot{
+    padding:30px 48px 60px 48px;
+    color:var(--text-faint);
+    font-size:12px;
+    font-family:var(--mono);
+    max-width:900px;
+    border-top:1px solid var(--border-soft);
+  }
+
+  @media (max-width: 880px){
+    .sidebar{
+      position:fixed; z-index:50; left:0; top:0;
+      transform:translateX(-100%);
+      transition:transform .2s ease;
+      box-shadow:20px 0 40px rgba(0,0,0,.4);
+    }
+    .sidebar.open{ transform:translateX(0); }
+    .topbar{ display:flex; }
+    .hero{ padding:28px 20px 24px 20px; }
+    .cards{ padding:8px 20px 60px 20px; }
+    footer.page-foot{ padding:20px; }
+    .overlay{
+      display:none;
+      position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:40;
+    }
+    .overlay.open{ display:block; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="overlay" id="overlay"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><span class="prompt-char">&gt;</span>&nbsp;guardrail<span class="cursor"></span></div>
+      <div class="brand-sub">Claude Code prompt handbook</div>
+    </div>
+    <div class="search-wrap">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="search" type="text" placeholder="Search prompts…" autocomplete="off" />
+        <span class="kbd">/</span>
+      </div>
+    </div>
+    <nav class="groups" id="nav"></nav>
+    <div class="sidebar-foot">v2 · 43 prompts · local, no data leaves this page</div>
+  </aside>
+
+  <main class="content" id="content">
+    <div class="topbar">
+      <button class="menu-btn" id="menuBtn" aria-label="Open menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="brand-mark" style="font-size:13px;"><span class="prompt-char">&gt;</span>&nbsp;guardrail</div>
+      <div style="width:34px;"></div>
+    </div>
+
+    <section class="hero">
+      <div class="hero-eyebrow">Prompt library</div>
+      <h1>Stop re-explaining your <span>architecture</span> every session.</h1>
+      <p>Reusable, fill-in-the-blank prompts for building with Claude Code without drifting off-pattern, inventing files, or burning context on documentation the model won't actually reuse. Pick a stage, replace the <span style="color:var(--warn); font-family:var(--mono); font-size:13px;">[PLACEHOLDERS]</span>, paste it in.</p>
+      <div class="hero-tags">
+        <span class="pill">source-of-truth architecture</span>
+        <span class="pill">pattern recognition</span>
+        <span class="pill">micro-context injection</span>
+        <span class="pill">gap method</span>
+        <span class="pill">red-green debugging</span>
+      </div>
+    </section>
+
+    <div id="cardsRoot"></div>
+
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-box">
+        <div class="modal-head">
+          <div class="modal-head-title">
+            <div>
+              <div class="card-title-row">
+                <span class="card-id" id="modalId"></span>
+                <h3 id="modalTitle"></h3>
+              </div>
+              <div class="modal-hint">Fill in the <b>[PLACEHOLDERS]</b> directly in the text below, then hit Copy &amp; Close.</div>
+            </div>
+          </div>
+          <button class="modal-close" id="modalCloseBtn" aria-label="Close editor" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="editorArea" contenteditable="true" spellcheck="false"></div>
+        </div>
+        <div class="modal-foot">
+          <button class="reset-link" id="resetBtn" type="button">Reset to original</button>
+          <button class="modal-copy-btn" id="modalCopyBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span>Copy &amp; close</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="page-foot">
+      Built as a living document — edit PROMPTS in the script tag to add, tune, or retag entries for your own stack.
+    </footer>
+  </main>
+</div>
+
+<script>
+const PROMPTS = [
+  {
+    id:"START-00", cat:"start", catLabel:"Getting Started", title:"The Core Workflow (read first)",
+    tags:["overview","workflow","mental model"],
+    blurb:"The pipeline every prompt below fits into. Not something you paste — read it once so the rest makes sense.",
+    body:`IDEA
+  ↓
+UNDERSTAND THE PROJECT
+  ↓
+THINK GLOBALLY
+  ↓
+FIND EXISTING PATTERNS
+  ↓
+IDENTIFY SOURCE OF TRUTH
+  ↓
+DETERMINE DEPENDENCIES
+  ↓
+PLAN
+  ↓
+IMPLEMENT SMALL SCOPE
+  ↓
+COMPILER / LINTER / TESTS
+  ↓
+FIX ROOT CAUSE
+  ↓
+VERIFY
+  ↓
+GLOBALIZE / IMPROVE GUARDRAIL
+
+Core philosophy:
+Don't make every prompt carry your entire architecture.
+
+Instead, build a codebase where Claude can discover patterns, reuse
+source-of-truth implementations, and get immediate feedback from types,
+linting, validation, tests, and architecture rules. Context tells Claude
+what to do once — errors and enforced patterns make it stick.`
+  },
+  {
+    id:"START-01", cat:"start", catLabel:"Getting Started", title:"New Project — Discovery",
+    tags:["new project","architecture","planning","domains"],
+    blurb:"For an empty repo. Forces architectural thinking before any code gets written — module boundaries, domains, and source-of-truth candidates.",
+    body:`I am starting a new production-grade application from scratch.
+
+Do NOT write application code yet.
+
+First understand the product and think about the system globally.
+
+PROJECT:
+[PROJECT NAME]
+
+PRODUCT:
+[WHAT THE PRODUCT DOES]
+
+USERS:
+[WHO WILL USE IT]
+
+CORE REQUIREMENTS:
+[LIST THE MAJOR BUSINESS REQUIREMENTS]
+
+TECH STACK:
+[STACK]
+
+EXPECTED SCALE:
+[EXPECTED USERS / DATA / TRAFFIC IF KNOWN]
+
+IMPORTANT:
+I do not want a feature-by-feature architecture designed independently.
+Think one level above the immediate features.
+
+Identify:
+1. Core business domains
+2. Major modules
+3. Domain boundaries
+4. Major entities
+5. Relationships between domains
+6. Authentication boundary
+7. Authorization boundary
+8. Tenant boundary if applicable
+9. Data ownership
+10. API boundaries
+11. Transaction boundaries
+12. Shared infrastructure
+13. Integration boundaries
+14. Event/background-processing requirements
+15. Audit requirements
+16. Observability requirements
+17. Testing strategy
+18. Security boundaries
+19. Likely future extensions
+20. Concepts that should become reusable sources of truth
+
+For every proposed shared abstraction, challenge it.
+Do not create abstractions merely because two things currently look similar.
+
+For every candidate source of truth explain:
+- what it owns
+- why it should be centralized
+- what future features could reuse it
+- what duplication would look like
+- why it should NOT remain feature-specific
+
+Also identify things that should deliberately remain local.
+Think about the next several features, not only the first release.
+Do not implement anything.
+
+Output:
+A. System architecture
+B. Module boundaries
+C. Dependency direction
+D. Source-of-truth candidates
+E. Security model
+F. Data model overview
+G. Integration boundaries
+H. Recommended implementation order
+I. Architectural risks
+J. Questions/assumptions that need validation
+
+Challenge my assumptions rather than simply agreeing with me.`
+  },
+  {
+    id:"START-02", cat:"start", catLabel:"Getting Started", title:"New Project — Build the Foundation",
+    tags:["new project","scaffolding","setup"],
+    blurb:"Run after the architecture is approved. Builds only the reusable skeleton — auth, config, error handling, conventions — nothing feature-specific yet.",
+    body:`Now implement the architectural foundation for the project.
+
+Do NOT implement the major business features yet.
+
+The goal is to create a stable foundation that future features can
+consistently reuse.
+
+Implement only what is necessary for:
+1. Project structure
+2. Module boundaries
+3. Configuration
+4. Environment handling
+5. Database setup
+6. Authentication boundary
+7. Authorization boundary
+8. Validation
+9. Error handling
+10. Logging
+11. API conventions
+12. Testing foundation
+13. Security foundation
+14. Integration boundaries
+15. Build/development tooling
+
+Rules:
+- Prefer one source of truth.
+- Do not duplicate shared behavior.
+- Do not create speculative abstractions.
+- Do not implement future features.
+- Do not introduce a second architectural pattern when an established
+  pattern already exists.
+- Keep dependencies flowing in the intended direction.
+- Make important architectural rules enforceable through code, types,
+  linting, architecture tests, or other automated checks where practical.
+
+Before implementing each important foundation piece, confirm it is
+consistent with the architecture we agreed on.
+
+After implementation:
+1. Compile/build the project.
+2. Run tests.
+3. Run static analysis/linting.
+4. Run architecture checks if configured.
+5. Fix failures at their root cause.
+
+Report:
+- foundation implemented
+- important patterns established
+- source-of-truth implementations created
+- files changed
+- verification performed
+- unresolved architectural risks`
+  },
+  {
+    id:"START-03", cat:"start", catLabel:"Getting Started", title:"Write CLAUDE.md",
+    tags:["claude.md","setup","conventions"],
+    blurb:"Keeps the project's memory file short and load-bearing instead of a documentation dump Claude will eventually stop reading.",
+    body:`Create a CLAUDE.md for this repository.
+
+The purpose of CLAUDE.md is to provide concise, stable instructions for
+working in this codebase.
+
+It must NOT become a giant documentation dump.
+
+Include only high-value instructions such as:
+1. Project purpose
+2. Technology stack
+3. High-level architecture
+4. Module boundaries
+5. Important source-of-truth implementations
+6. Dependency rules
+7. Security rules
+8. Tenant isolation rules if applicable
+9. Authentication/authorization conventions
+10. Validation conventions
+11. Error-handling conventions
+12. Testing commands
+13. Build commands
+14. Important forbidden patterns
+15. Important architectural invariants
+
+Prefer pointing Claude toward actual source-of-truth code instead of
+explaining every implementation detail.
+
+The codebase itself should remain the primary architectural source of
+truth. Do not document obvious code. Do not duplicate large sections of
+the repository.
+
+After creating the file, show me the final CLAUDE.md and explain why
+each section is necessary.`
+  },
+  {
+    id:"MAP-01", cat:"map", catLabel:"Understanding a Codebase", title:"Find the Golden Patterns",
+    tags:["existing codebase","patterns","onboarding"],
+    blurb:"Before you touch an existing codebase, ask Claude to catalog its strongest existing implementations per category, so future prompts can point at them.",
+    body:`I want to establish canonical or "golden" implementations in this
+codebase.
+
+Do not modify code yet.
+
+Search the repository and identify the strongest existing implementation
+for each category:
+1. Simple CRUD
+2. Master-data CRUD
+3. Transactional workflow
+4. Authentication
+5. Authorization
+6. Tenant isolation
+7. Validation
+8. Error handling
+9. Pagination/filtering
+10. Audit logging
+11. Database transactions
+12. External integration
+13. Background processing
+14. Reporting/query-heavy logic
+15. API endpoint
+16. Frontend form
+17. Frontend data fetching
+18. Frontend error/loading/empty states
+
+For each category report:
+- canonical file/module
+- why it is the strongest existing example
+- important pattern
+- what should be copied
+- what should NOT be copied
+- known weaknesses
+- whether a better implementation exists elsewhere
+
+Do not create abstractions. Do not refactor yet.
+The goal is to understand the existing patterns before changing them.
+
+At the end produce a table:
+PATTERN → CANONICAL IMPLEMENTATION → PURPOSE → FUTURE FEATURES THAT
+SHOULD REUSE IT → IMPORTANT RULES → KNOWN PROBLEMS`
+  },
+  {
+    id:"MAP-02", cat:"map", catLabel:"Understanding a Codebase", title:"Existing Project — First Audit",
+    tags:["audit","legacy","drift","health check"],
+    blurb:"Run before throwing new features at an old codebase. Surfaces drift, duplication, and violations before they compound.",
+    body:`Before implementing any new feature, audit the current codebase for
+architectural consistency.
+
+Do NOT modify anything yet.
+
+Inspect:
+- module structure
+- dependency direction
+- source-of-truth implementations
+- duplicate logic
+- authorization
+- tenant isolation
+- validation
+- error handling
+- persistence
+- transaction boundaries
+- API patterns
+- frontend patterns
+- external integrations
+- stale/legacy code
+- dead code
+- contradictory patterns
+
+Identify:
+1. Strong patterns we should preserve
+2. Weak patterns we should avoid copying
+3. Existing architectural violations
+4. Duplicated functionality
+5. Potential source-of-truth candidates
+6. Legacy implementations
+7. Areas where future AI development may drift
+
+Do not suggest a complete rewrite unless there is evidence that it is
+necessary.
+
+Produce a prioritized report:
+CRITICAL / HIGH / MEDIUM / LOW
+
+For each issue include:
+- location
+- evidence
+- impact
+- recommended action
+- whether it should be fixed before adding new features`
+  },
+  {
+    id:"BUILD-01", cat:"build", catLabel:"Building Features", title:"Simple Feature — One-Shot",
+    tags:["feature","one-shot","plain english"],
+    blurb:"For a mature codebase with real patterns already in place. Straightforward features don't need architecture repeated — just point at reuse.",
+    body:`Implement this feature:
+
+[FEATURE]
+
+Requirements:
+[REQUIREMENTS]
+
+Use the existing architecture.
+
+Before writing code:
+1. Find the closest existing implementation.
+2. Identify the pattern it uses.
+3. Reuse existing source-of-truth implementations.
+4. Do not introduce a competing pattern.
+5. Do not duplicate existing logic.
+
+Keep the implementation focused on this feature.
+Do not refactor unrelated code.
+Do not build future functionality unless it is required to support the
+current feature.
+
+After implementation:
+- compile/build
+- run relevant tests
+- run lint/static checks
+- fix failures
+- verify the main user flow
+
+Do not stop at "implementation complete." Verify that the final
+implementation follows the established architecture.
+
+Report:
+- files changed
+- existing patterns reused
+- tests/checks run
+- any remaining concerns`
+  },
+  {
+    id:"BUILD-02", cat:"build", catLabel:"Building Features", title:"Search-First Prompt",
+    tags:["reuse","duplication","discovery","search-first"],
+    blurb:"The honest version of “tell it something already exists.” Instead of asserting a false claim, instruct discovery-before-creation directly.",
+    body:`Implement:
+
+[FEATURE]
+
+Before creating anything, search the codebase for existing functionality
+that may already solve part or all of this requirement.
+
+Search for:
+- services
+- utilities
+- helpers
+- repositories
+- domain logic
+- shared components
+- adapters
+- integrations
+- validators
+- authorization
+- existing API endpoints
+- existing event handlers
+
+Assume reusable functionality MAY already exist.
+Your first task is discovery, not creation.
+
+If an existing implementation is suitable:
+- reuse it
+- extend it if appropriate
+- do not create a duplicate source of truth
+
+If multiple implementations exist:
+- locate all of them
+- compare them
+- determine which should become canonical
+- explain the consolidation strategy
+
+If no suitable implementation exists:
+- explain why a new source of truth is justified
+- then create the smallest appropriate implementation
+
+After implementation, verify the result.
+Do not duplicate functionality simply because finding an existing
+implementation is inconvenient.`
+  },
+  {
+    id:"BUILD-03", cat:"build", catLabel:"Building Features", title:"Medium Feature",
+    tags:["feature","integration","multi-system"],
+    blurb:"For features that touch more than one existing system but don't need a full architecture-first pass.",
+    body:`Implement:
+
+[FEATURE]
+
+This feature interacts with:
+- [SYSTEM A]
+- [SYSTEM B]
+- [SYSTEM C]
+
+Before implementation:
+1. Inspect the closest existing features.
+2. Determine their architecture.
+3. Identify reusable source-of-truth implementations.
+4. Determine existing patterns for:
+   - persistence
+   - business logic
+   - validation
+   - authorization
+   - error handling
+   - transactions
+   - testing
+
+Do not introduce a new implementation where an existing pattern already
+applies.
+
+Think one level above the current feature. Ask:
+"What will future features likely need from what I am building now?"
+
+Identify anything that should be globalized. However, do NOT create an
+abstraction simply because it might be useful someday. Implement only
+the current feature.
+
+After implementation:
+- run build
+- run tests
+- run static checks
+- verify integration with existing features
+- look for duplicate logic
+
+Report:
+- architecture followed
+- patterns reused
+- new shared/source-of-truth functionality
+- files changed
+- verification
+- future considerations`
+  },
+  {
+    id:"BUILD-04", cat:"build", catLabel:"Building Features", title:"Complex Feature — Architecture First",
+    tags:["complex feature","design","no-code investigation"],
+    blurb:"Don't let Claude start typing on a genuinely complex feature. Force a design investigation and challenge your own assumptions first.",
+    body:`I want to build:
+
+[COMPLEX FEATURE]
+
+Do NOT implement anything yet.
+Treat this as an architecture/design investigation.
+
+BUSINESS REQUIREMENTS:
+[REQUIREMENTS]
+
+MY CURRENT THINKING:
+[YOUR IDEA]
+
+Now independently inspect the repository. Identify:
+1. Existing related features
+2. Existing reusable patterns
+3. Existing source-of-truth implementations
+4. Domain concepts
+5. Data model requirements
+6. Module boundaries
+7. Dependencies
+8. Authorization
+9. Tenant boundaries
+10. Transaction boundaries
+11. Concurrency
+12. Idempotency
+13. Failure handling
+14. Caching
+15. Background processing
+16. Events/messages
+17. External integrations
+18. Observability
+19. Testing strategy
+20. Future extensibility
+
+Think beyond the immediate UI. Ask:
+- What will the next 3-5 features need from this?
+- What should be globalized?
+- What should remain local?
+- What would create dangerous coupling?
+- What could become a second source of truth?
+- What would be difficult to migrate later?
+
+Challenge my assumptions. Do not agree with my architecture merely
+because I proposed it.
+
+Produce:
+A. Recommended architecture
+B. Alternative approaches
+C. Tradeoffs
+D. Domain model
+E. Dependency graph
+F. Source-of-truth candidates
+G. Security boundaries
+H. Data flow
+I. Failure model
+J. Implementation phases
+K. Testing strategy
+L. Risks
+
+Do not write implementation code yet.`
+  },
+  {
+    id:"BUILD-05", cat:"build", catLabel:"Building Features", title:"Complex Feature — Implement One Phase",
+    tags:["complex feature","phased delivery"],
+    blurb:"Executes a single approved phase of a larger plan without letting Claude wander into later phases or silently redesign what's already done.",
+    body:`Implement Phase [NUMBER] of the approved architecture for:
+
+[FEATURE]
+
+APPROVED ARCHITECTURE:
+[PASTE/REFERENCE PLAN]
+
+Previously completed:
+[COMPLETED WORK]
+
+For this phase only:
+[CURRENT OBJECTIVE]
+
+Before modifying code:
+1. Inspect the current implementation.
+2. Verify the assumptions from the architecture plan.
+3. Locate the closest existing patterns.
+4. Reuse existing sources of truth.
+5. Check for changes since the architecture plan was created.
+
+If the architecture plan conflicts with the current codebase:
+STOP and explain the conflict before inventing a new solution.
+
+Do not implement later phases.
+Do not redesign completed components without evidence that the existing
+design is incorrect.
+
+After implementation:
+- build
+- run relevant tests
+- run static/architecture checks
+- verify integration with completed phases
+
+Fix failures at the root cause.
+
+Report:
+- implementation
+- files changed
+- patterns reused
+- verification
+- new dependencies
+- remaining work`
+  },
+  {
+    id:"BUILD-06", cat:"build", catLabel:"Building Features", title:"Break a Huge Feature Into Phases",
+    tags:["planning","decomposition","roadmap"],
+    blurb:"Turns a big vague ask into a dependency-ordered sequence of vertical slices, before any implementation starts.",
+    body:`I want to build:
+
+[HUGE FEATURE]
+
+Do NOT implement it yet.
+Break it into architectural phases.
+
+The decomposition must consider:
+- domain dependencies
+- data dependencies
+- security
+- reusable infrastructure
+- source-of-truth creation
+- integrations
+- background jobs
+- UI
+- testing
+- future extensibility
+
+For every phase provide:
+1. Objective
+2. Prerequisites
+3. What it creates
+4. What future phases depend on it
+5. What must NOT be implemented yet
+6. Verification criteria
+7. Architectural risk
+
+Prefer stable vertical slices over arbitrary file-by-file decomposition.
+
+Produce:
+- dependency graph
+- recommended implementation sequence
+- minimum viable architectural foundation
+- future extension points
+
+Do not implement.`
+  },
+  {
+    id:"BUILD-07", cat:"build", catLabel:"Building Features", title:"Dependency / Prerequisite Discovery",
+    tags:["dependencies","sequencing","prerequisites"],
+    blurb:"Figures out what must already exist before a feature can be built correctly — and what's just nice-to-have or future scope.",
+    body:`I want to implement:
+
+[FEATURE]
+
+Before implementation, determine what must already exist for this
+feature to be architecturally correct.
+
+Identify:
+- domain prerequisites
+- database prerequisites
+- source-of-truth prerequisites
+- authorization prerequisites
+- integration prerequisites
+- infrastructure prerequisites
+- testing prerequisites
+
+Create a dependency chain:
+A
+  ↓
+B
+  ↓
+C
+  ↓
+CURRENT FEATURE
+  ↓
+FUTURE FEATURE
+
+Then determine:
+1. What is absolutely required now?
+2. What is useful but optional?
+3. What belongs to a future phase?
+4. What should be globalized?
+5. What should remain local?
+
+Do not implement future work just because it is related.
+Provide the minimum correct implementation sequence.`
+  },
+  {
+    id:"GUARD-01", cat:"guard", catLabel:"Architecture Hygiene", title:"Globalize Something",
+    tags:["source of truth","duplication","refactor trigger"],
+    blurb:"Use the moment you feel Claude is about to write a second version of something that should be centralized.",
+    body:`Before implementing:
+
+[FEATURE]
+
+I suspect this functionality should exist as a reusable source of truth:
+
+[FUNCTIONALITY]
+
+Investigate the codebase. Find:
+- existing implementations
+- duplicates
+- related helpers
+- similar business logic
+- existing adapters
+- existing shared infrastructure
+
+Determine whether this is truly a shared domain concept.
+
+If yes:
+1. Identify the canonical implementation.
+2. Consolidate or extend it.
+3. Migrate callers.
+4. Make future features reuse it.
+
+If multiple implementations differ:
+- determine why
+- preserve legitimate differences
+- do not blindly merge unrelated concepts
+
+If this should NOT be globalized:
+Explain why keeping it local is architecturally better.
+
+Only then implement the feature.`
+  },
+  {
+    id:"GUARD-02", cat:"guard", catLabel:"Architecture Hygiene", title:"Gap Method",
+    tags:["decoupling","future proofing","staged build"],
+    blurb:"Deliberately stub out tomorrow's capability behind an explicit boundary today, instead of accidentally coupling the two.",
+    body:`Implement:
+
+[CURRENT FEATURE]
+
+There is a future feature:
+
+[FUTURE FEATURE]
+
+Do NOT implement the future feature yet.
+
+Instead:
+1. Build the current feature.
+2. Create the single source-of-truth boundary through which the future
+   capability will eventually operate.
+3. Do not tightly couple today's feature to the future implementation.
+4. Keep the future boundary explicit.
+5. Make the missing future implementation discoverable through an
+   explicit TODO, test, guard, warning, or other appropriate mechanism —
+   not silent context you're expected to remember.
+
+The architecture should look conceptually like:
+
+CURRENT FEATURE
+      ↓
+SOURCE OF TRUTH
+      ↓
+[FUTURE CAPABILITY]
+
+Do not build the future capability.
+Verify today's feature independently.
+
+At the end, report exactly where the future integration point exists.`
+  },
+  {
+    id:"GUARD-03", cat:"guard", catLabel:"Architecture Hygiene", title:"Verify-First (“White-Lie”) Search",
+    tags:["search-first","reuse","architecture drift"],
+    blurb:"You strongly suspect a reusable implementation already exists somewhere. Make Claude verify that hunch instead of assuming or ignoring it.",
+    body:`I want to implement:
+
+[FEATURE]
+
+I suspect the codebase already contains the correct reusable
+architecture for:
+
+[CONCEPT]
+
+Do not assume that my claim is correct. First verify it.
+
+Search the repository thoroughly for:
+- implementations
+- references
+- imports
+- services
+- adapters
+- utilities
+- tests
+- routes
+- configuration
+- registration points
+
+If it exists:
+- identify the canonical implementation
+- explain how this feature should reuse it
+
+If multiple implementations exist:
+- compare them
+- identify architectural drift
+- determine which should become canonical
+
+If nothing exists:
+- explain the evidence
+- design the smallest new source of truth required
+
+Only then implement the feature. Do not silently create another
+implementation.`
+  },
+  {
+    id:"FIX-01", cat:"fix", catLabel:"Debugging & Review", title:"Red-Green — Verify My Hypothesis",
+    tags:["debugging","root cause","hypothesis"],
+    blurb:"You think you know the cause of a bug. Don't let Claude just trust you — make it trace the real path first.",
+    body:`I have the following hypothesis about the problem:
+
+[HYPOTHESIS]
+
+Do not assume my hypothesis is correct. First investigate.
+
+Trace the relevant execution path and search for:
+- duplicate logic
+- alternate implementations
+- legacy code
+- stale references
+- fallback/default paths that might be silently overriding the real one
+- anything that would explain the symptom independent of my hypothesis
+
+Confirm or refute my hypothesis with evidence from the actual code path,
+not from what "should" be happening.
+
+If my hypothesis is wrong, explain what the real cause is instead of
+patching toward what I originally guessed.
+
+Only after the true cause is confirmed:
+- propose a fix
+- explain why it addresses the cause, not just this occurrence
+- check whether the same root cause could affect anything else that
+  shares this pattern
+
+After the fix:
+- build
+- run tests
+- verify the original repro no longer fails
+- verify nothing else broke
+
+Report: root cause, evidence, fix applied, other locations checked,
+regression risk.`
+  },
+  {
+    id:"FIX-02", cat:"fix", catLabel:"Debugging & Review", title:"Root-Cause Bug Fix",
+    tags:["debugging","bugfix","stack trace"],
+    blurb:"For a concrete bug/stack trace with no hypothesis yet — forces root-cause tracing before any patch.",
+    body:`I am seeing this bug:
+
+BUG:
+[DESCRIBE THE BUG / STACK TRACE / REPRO STEPS]
+
+Do not patch the symptom.
+
+First:
+1. Reproduce or trace the exact failure path.
+2. Identify every file/module involved.
+3. Determine the root cause, not just where the error surfaces.
+4. Check whether this root cause could affect other features that share
+   the same pattern.
+
+If the root cause is a violation of an existing architectural pattern
+(e.g. missing scoping, wrong layer accessing the database, duplicated
+state), say so explicitly.
+
+Only after the root cause is confirmed:
+- propose a fix
+- explain why it addresses the cause, not just this occurrence
+- check if the same bug exists elsewhere in the codebase using the same
+  pattern
+
+After the fix:
+- build
+- run tests
+- verify the original repro no longer fails
+- verify nothing else broke
+
+Report:
+- root cause
+- why it happened
+- fix applied
+- other locations checked for the same issue
+- regression risk`
+  },
+  {
+    id:"FIX-03", cat:"fix", catLabel:"Debugging & Review", title:"Security Review",
+    tags:["security","auth","tenant isolation","audit"],
+    blurb:"Checks that a feature actually routes through your shared auth/scoping layer instead of assuming it does because it looks similar to code that does.",
+    body:`Perform a security review of [FEATURE / MODULE / ENDPOINT].
+
+Do not modify code yet.
+
+Check specifically for:
+1. Every code path that touches this feature and whether it goes
+   through the shared authorization/permission layer.
+2. Tenant/organization scoping on every query — could data from one
+   tenant leak to another.
+3. Whether any server-only logic could be bundled or called from the
+   client.
+4. Input validation on every entry point (API, forms, background jobs).
+5. Rate limiting on public or expensive endpoints.
+6. Audit logging for sensitive actions.
+7. Secrets or credentials that should not be in code, logs, or client
+   bundles.
+
+For every finding report:
+- location
+- severity (CRITICAL / HIGH / MEDIUM / LOW)
+- exact way it could be exploited
+- recommended fix
+
+Do not assume something is safe just because it looks similar to a
+protected pattern elsewhere — verify it actually goes through the same
+enforcement path.`
+  },
+  {
+    id:"FIX-04", cat:"fix", catLabel:"Debugging & Review", title:"Pre-Merge Code Review",
+    tags:["code review","pull request","quality gate"],
+    blurb:"A senior-engineer-style review pass on a diff or branch before it merges — architecture, security, types, tests, in that order.",
+    body:`Review the changes in [BRANCH / DIFF / FILES] as a senior engineer
+would before merging.
+
+Check for:
+1. Architectural consistency with existing patterns
+2. Security issues (auth, tenant/org scoping, input validation, secrets)
+3. Type safety — no "any"/unchecked casts, no bypassed validation
+4. Duplicated logic that should reuse an existing source of truth
+5. Missing error handling
+6. Missing tests for the new behavior
+7. Performance concerns (N+1 queries, unnecessary re-renders, missing
+   indexes)
+8. Naming and readability
+
+Do not rewrite the code yourself yet.
+
+Produce a review report:
+BLOCKING (must fix before merge)
+IMPORTANT (should fix)
+MINOR (nice to have)
+QUESTIONS (things you're unsure about and want my input on)
+
+For each item include the file, the issue, and why it matters.`
+  },
+  {
+    id:"CTRL-01", cat:"ctrl", catLabel:"Process & Safety", title:"Safe Refactor",
+    tags:["refactor","behavior preservation","incremental"],
+    blurb:"Keeps a refactor from silently turning into a rewrite. Behavior-preserving, small steps, verified between each one.",
+    body:`I want to refactor [WHAT] because [REASON].
+
+Do NOT change behavior.
+
+Before touching anything:
+1. Identify every caller/consumer of the code being refactored.
+2. Identify existing tests that cover this behavior. If coverage is
+   thin, add characterization tests first.
+3. Confirm the current behavior (including edge cases) before changing
+   structure.
+
+Refactor in the smallest safe steps:
+- one structural change at a time
+- build/test after every step
+- do not mix refactoring with new functionality in the same step
+
+If you find a bug while refactoring, do NOT fix it silently — report it
+separately and ask whether to fix it now or after the refactor is
+verified safe.
+
+After each step report:
+- what changed
+- what stayed behaviorally identical
+- verification performed`
+  },
+  {
+    id:"CTRL-02", cat:"ctrl", catLabel:"Process & Safety", title:"Session Setup — Staying in Control",
+    tags:["git","branching","session hygiene"],
+    blurb:"Run at the start of any session. Keeps git out of Claude's hands and keeps every change auditable against a clean branch.",
+    body:`Before we start this session:
+
+1. Create a new git branch for this work: [BRANCH NAME]
+2. Do not use any destructive git commands (reset --hard, checkout of
+   other branches, rebase, force push) without asking me first.
+3. Do not read git history/log to infer intent — only use what I tell
+   you in this conversation.
+4. At the end of this session, summarize exactly which files were
+   changed and why, so I can review the diff myself.
+
+If at any point you are unsure whether a change is safe, stop and ask
+instead of guessing.`
+  },
+  {
+    id:"MAP-03", cat:"map", catLabel:"Understanding a Codebase", title:"Verify Old Architecture Is Actually Gone",
+    tags:["cleanup","migration","dead code","verification"],
+    blurb:"You think a legacy implementation was fully replaced. Don't trust that — prove it before you rely on it or delete it.",
+    body:`I believe the old implementation of:
+
+[OLD ARCHITECTURE / FEATURE]
+
+has already been fully removed and replaced by:
+
+[NEW ARCHITECTURE]
+
+Do not trust that assumption — verify it across the entire repository.
+
+Search for:
+- imports
+- direct references
+- routes/endpoints
+- registrations (DI containers, module configs, feature flags)
+- components
+- services
+- event handlers / listeners
+- configuration
+- database references
+- tests
+- adapters
+
+I want proof that the old implementation is unreachable, not just that
+the "main" file was deleted.
+
+If references remain:
+1. Map every one of them.
+2. Explain why each still exists.
+3. Migrate it to the canonical implementation.
+4. Remove the obsolete reference.
+5. Add a regression check (test, lint rule, or architecture test) that
+   would catch this drifting back in.
+
+Only report the old architecture as fully removed after a second search
+comes back clean.`
+  },
+  {
+    id:"BUILD-08", cat:"build", catLabel:"Building Features", title:"The Daily-Driver Prompt (Guardrail Mature)",
+    tags:["default prompt","mature codebase","everyday"],
+    blurb:"Once your architecture is actually enforced, most feature prompts should shrink to this — no re-explaining security, tenancy, or validation every time.",
+    body:`Implement:
+
+[FEATURE]
+
+Use the existing architectural patterns and sources of truth — do not
+re-explain them, they're already enforced by the codebase.
+
+Before creating anything new:
+- inspect the closest existing implementation
+- locate reusable functionality
+- reuse existing patterns
+- avoid creating a second source of truth
+
+Think one level above the immediate feature — make the implementation
+compatible with what's likely to be built next, without prematurely
+building that next thing.
+
+Respect the application's existing security, authorization, tenant
+isolation, validation, transaction, error-handling, rate-limiting,
+audit-logging, database-access, UI/component, and testing conventions.
+
+Do not introduce a new pattern unless the existing architecture
+genuinely cannot support this requirement — if that happens, stop and
+say so explicitly instead of quietly inventing one.
+
+Implement the complete feature. Do not leave required functionality
+half-built and ask me for "next steps."
+
+After implementation:
+- build / compile
+- type-check
+- lint
+- run relevant tests
+- run architecture/security checks
+- fix failures
+- verify the complete user-facing flow
+
+Finally, scan your own diff for: duplicate logic, a competing source of
+truth, architectural drift, security gaps, and unrelated changes.
+
+Report:
+FEATURE:
+FILES:
+PATTERNS REUSED:
+NEW SOURCES OF TRUTH:
+VERIFICATION:
+RISKS:`
+  },
+  {
+    id:"GUARD-04", cat:"guard", catLabel:"Architecture Hygiene", title:"Type / Schema Source-of-Truth Rule",
+    tags:["types","typescript","schema","duplication"],
+    blurb:"Stops Claude from hand-rolling a second definition of a shape that already exists in your DB schema, ORM models, or validation layer.",
+    body:`Implement:
+
+[FEATURE]
+
+Before creating any new type, interface, DTO, or schema, search for an
+existing source-of-truth definition first.
+
+Prefer, in this order:
+1. Types generated from the database/ORM layer
+2. Existing shared domain types
+3. Existing validated request/response schemas
+4. Existing shared component prop types
+
+Do not duplicate an existing shape under a new name.
+
+Do not use an escape hatch ("any", "unknown", unchecked casts, or your
+language's equivalent) without a written, specific justification.
+
+If an existing type needs extending, derive/compose from it — don't
+copy its fields into a new definition.
+
+Before finishing, run the full type/compile check and resolve every
+error at the root — do not suppress or cast around them.
+
+Report any genuinely new type you had to create and explain why no
+existing one could serve.`
+  },
+  {
+    id:"GUARD-05", cat:"guard", catLabel:"Architecture Hygiene", title:"Component & UI Globalization",
+    tags:["frontend","components","design system","duplication"],
+    blurb:"The frontend version of globalizing logic — checks for a reusable component or design token before a new one gets created.",
+    body:`Implement this UI:
+
+[UI FEATURE]
+
+Before creating a new component:
+1. Search for an existing component with a similar responsibility.
+2. Determine whether it can be reused as-is.
+3. Determine whether it can be extended or composed (slots, props,
+   children) instead of duplicated.
+
+If a suitable global component exists, reuse it. If this UI represents
+a genuinely new reusable pattern, globalize it properly instead of
+leaving it route-local. If it is truly specific to this one screen,
+keep it local — don't force premature reuse.
+
+Do not duplicate a component just because the visual spec differs
+slightly; extend it with a prop/variant instead.
+
+Styling rules:
+- use existing design tokens (color, spacing, type scale) — do not
+  hardcode raw values that already have a token
+- follow existing light/dark mode conventions
+- match the existing component conventions, not a new personal style
+
+Verify: responsive behavior, loading state, empty state, error state,
+and that it doesn't visually look like a different product bolted on.`
+  },
+  {
+    id:"ENFORCE-01", cat:"enforce", catLabel:"Guardrails & Enforcement", title:"Turn a Rule Into an Enforced Guardrail",
+    tags:["compiler","lint","architecture test","enforcement"],
+    blurb:"The single highest-leverage move in this whole system: stop writing a rule in CLAUDE.md and make the codebase itself reject violations.",
+    body:`Here is an architectural rule I currently only enforce through
+documentation / convention:
+
+[RULE]
+
+I want this enforced by the codebase, not just written down.
+
+Determine the strongest practical enforcement mechanism available in
+this stack:
+- compiler / type system
+- schema validation
+- lint rule
+- static analysis
+- architecture test (e.g. dependency/module boundary check)
+- runtime guard at the boundary where the mistake would happen
+
+Pick the mechanism closest to where the mistake would actually occur —
+a compile-time error beats a runtime error, a runtime error beats a
+code review comment.
+
+The goal is this loop:
+
+  INVALID IMPLEMENTATION
+        ↓
+  AUTOMATIC, UNAMBIGUOUS ERROR
+        ↓
+  CLAUDE SEES THE ERROR
+        ↓
+  CLAUDE FIXES IT WITHOUT ME EXPLAINING THE RULE AGAIN
+
+Implement the guardrail.
+
+Then deliberately write a small violation to prove the guardrail
+actually catches it — show me the failure — then remove the test
+violation and confirm the normal build/lint/tests pass clean.`
+  },
+  {
+    id:"ENFORCE-02", cat:"enforce", catLabel:"Guardrails & Enforcement", title:"Inline Micro-Context (What / Why / How / Where)",
+    tags:["comments","context","documentation"],
+    blurb:"Replaces a stale docs folder with small, load-bearing comments right where the ambiguity actually lives.",
+    body:`Review:
+
+[MODULE / FILE / FUNCTION]
+
+Identify the architectural relationships here that a future session —
+mine or Claude's — is likely to misunderstand without extra context.
+
+Add concise inline context only at those specific points. For each one,
+answer only what's non-obvious:
+
+WHAT — what does this represent, in one line
+WHY — why does it exist / what problem does it prevent
+HOW — how is it meant to be used (and how NOT to use it)
+WHERE — where it sits in the architecture / what layer owns it
+
+Rules:
+- do not comment obvious code
+- do not add this to every line — only at genuine decision points or
+  non-obvious connections between two parts of the system
+- do not duplicate what the code, its name, or its types already say
+- keep each note to one or two lines; this is a signpost, not
+  documentation
+
+The test: someone with no memory of this conversation should be able to
+read the comment and immediately know whether they're allowed to touch
+this code, and how.`
+  },
+  {
+    id:"ENFORCE-03", cat:"enforce", catLabel:"Guardrails & Enforcement", title:"Add Source-of-Truth Keywords",
+    tags:["search","navigation","context window"],
+    blurb:"A tiny searchable marker at the top of canonical files so 'grep first, read second' actually works instead of dumping whole files into context.",
+    body:`This is a source-of-truth implementation for:
+
+[CONCEPT]
+
+Add a short, high-signal marker comment at the top of the file so this
+implementation is easy to find by search rather than by reading the
+whole repository.
+
+Format:
+
+  // SOURCE_OF_TRUTH: <concept>
+  // KEYWORDS: <4-6 terms someone would actually search for>
+
+Rules:
+- keywords should be terms a person or Claude would realistically type
+  when looking for this — not a restatement of the file path
+- 4-6 keywords maximum; more than that stops being a signal
+- do not turn this into a documentation block — one or two lines only
+- do not add this marker to something that isn't actually canonical;
+  a marker on the wrong file is worse than no marker
+
+Example:
+
+  // SOURCE_OF_TRUTH: permissions
+  // KEYWORDS: authorization, RBAC, roles, resource permissions, org scoping`
+  },
+  {
+    id:"ENFORCE-04", cat:"enforce", catLabel:"Guardrails & Enforcement", title:"Build a Search-First Navigation Habit",
+    tags:["search","navigation","context window","token efficiency"],
+    blurb:"Makes grep-for-keywords the default first move instead of dumping whole files or folders into context on every task.",
+    body:`I want to reduce how much of the repository gets pulled into context
+just to find one piece of architecture.
+
+Going forward, before reading full files to understand how something
+works:
+
+1. Search for SOURCE_OF_TRUTH / KEYWORDS markers relevant to the
+   concept.
+2. Narrow to the smallest candidate set of files from that search.
+3. Only then open and read those specific files in depth.
+4. Check their direct callers/consumers if needed.
+5. Only after that, start implementing.
+
+Do not open unrelated files just because their names look similar.
+Do not read an entire docs folder when a targeted search would answer
+the question.
+
+Demonstrate this by running it on three real searches right now:
+
+[EXAMPLE CONCEPT 1]
+[EXAMPLE CONCEPT 2]
+[EXAMPLE CONCEPT 3]
+
+For each, show what you searched for, what you found, and which file
+you'd actually read first.`
+  },
+  {
+    id:"ENFORCE-05", cat:"enforce", catLabel:"Guardrails & Enforcement", title:"Server-Only Security Boundary",
+    tags:["security","server-only","bundling"],
+    blurb:"Prevents server-only logic — auth checks, secrets, privileged queries — from ever being reachable from the client, deliberately or by accident.",
+    body:`Implement or review this server-side functionality:
+
+[SERVER-SIDE FUNCTIONALITY]
+
+This must be strictly server-only. Before touching it:
+
+1. Identify every caller.
+2. Identify whether any client-reachable code path could call it
+   directly, bundle it, or trigger it without going through the
+   intended entry point.
+3. Identify whether sensitive logic (secrets, permission checks,
+   privileged queries) could be exposed to the client this way.
+4. Identify the existing server-only enforcement mechanism in this
+   codebase (a marker, a build-time boundary, a module rule, a lint
+   rule — whatever this stack actually has).
+
+Reuse that existing mechanism — do not invent a feature-specific one.
+
+If the boundary is currently only documented and not enforced,
+strengthen it with an automated check (build-time failure, architecture
+test, or lint rule) rather than leaving it as a convention.
+
+Verify:
+- legitimate server callers still work
+- a client-side attempt to reach it is rejected, not just discouraged
+- there's a test covering the boundary itself, not just the happy path`
+  },
+  {
+    id:"ENFORCE-06", cat:"enforce", catLabel:"Guardrails & Enforcement", title:"Normalized Entry Point (\"The Block\")",
+    tags:["security","architecture","entry point","core pattern"],
+    blurb:"The single highest-leverage pattern in this whole system — one funnel every request goes through so auth, tenancy, rate limits and audit logging stop being something you re-prompt for every feature.",
+    body:`Review the backend architecture.
+
+I want all meaningful application traffic — user requests, API calls,
+and anything an AI agent might trigger on the user's behalf — to pass
+through one normalized entry point before it reaches business logic or
+the database.
+
+That entry point should provide (by reusing what already exists, not
+reimplementing it per feature):
+- session / identity context
+- tenant or organization context
+- authorization / permission checks
+- feature gates and plan/usage limits
+- rate limiting
+- audit logging
+- request validation and context enrichment
+- consistent error handling
+- usage tracking, where required
+
+Feature-specific business logic stays below this boundary. Database
+access stays in the data-access layer. The resulting shape should be
+obvious and linear:
+
+  ENTRY → GUARDRAILS → BUSINESS LOGIC → DATABASE
+
+Do not implement these concerns independently inside individual feature
+endpoints going forward — if this entry point already exists, extend
+it; if it doesn't, create the minimal version and migrate one existing
+endpoint plus one new endpoint through it as proof it works.`
+  },
+  {
+    id:"ENFORCE-07", cat:"enforce", catLabel:"Guardrails & Enforcement", title:"Tenant / Organization Safety Audit",
+    tags:["security","multi-tenant","critical"],
+    blurb:"For anything multi-tenant. Cross-tenant data leakage is a categorically worse failure than a normal bug — this treats it that way.",
+    body:`Review or implement:
+
+[FEATURE]
+
+This application is multi-tenant.
+
+Hard rule: tenant/organization identity must never be supplied by the
+client, inferred from a prompt, or trusted from user input when it can
+instead be derived from the authenticated server-side session. The
+server determines the active tenant — nothing else does.
+
+Verify:
+1. How tenant identity is established for this request.
+2. Where it enters the code path.
+3. How it reaches business logic.
+4. How it reaches persistence — is every relevant query actually scoped
+   to it?
+5. Do update/delete operations verify ownership before acting, not just
+   existence?
+6. Do background jobs preserve tenant context correctly?
+7. Is cached data tenant-safe, or could one tenant's cache leak into
+   another's response?
+8. Do external integrations preserve the tenant boundary?
+
+Search specifically for cross-tenant leakage risks — don't just confirm
+the happy path is scoped correctly.
+
+Do not rely on the frontend to enforce this. Do not rely on an AI
+agent's prompt to supply the correct tenant.
+
+Add a regression test that actively attempts cross-tenant access and
+confirms it's rejected.
+
+Treat any violation found here as CRITICAL, not a normal bug.`
+  },
+  {
+    id:"ENFORCE-08", cat:"enforce", catLabel:"Guardrails & Enforcement", title:"Rate Limiting Layer",
+    tags:["rate limiting","abuse prevention","reliability"],
+    blurb:"Keeps rate limiting as one reusable layer with per-feature overrides, instead of bespoke throttling logic scattered per endpoint.",
+    body:`Implement rate limiting for:
+
+[RESOURCE / FEATURE]
+
+First inspect the existing rate-limiting mechanism in this codebase —
+do not build feature-specific rate-limiting infrastructure if a shared
+one already exists.
+
+Determine which of these apply here:
+- a base/global limit
+- an authenticated-user limit
+- a tenant- or resource-specific limit
+- an IP-based limit (important for public/unauthenticated endpoints)
+- a stricter limit for an expensive operation
+
+Reuse the canonical rate-limit layer. If this feature genuinely needs a
+custom limit, extend that shared mechanism with a parameter — don't
+bypass it with a one-off implementation.
+
+Add tests for: under the limit, at the limit, limit reset behavior,
+concurrent requests hitting the limit simultaneously, and — if this is
+a public endpoint — unauthenticated abuse.`
+  },
+  {
+    id:"ENFORCE-09", cat:"enforce", catLabel:"Guardrails & Enforcement", title:"Audit Logging Layer",
+    tags:["audit log","compliance","observability"],
+    blurb:"Makes 'was this action logged' a property of the shared entry point instead of something every feature has to remember to add.",
+    body:`Review:
+
+[FEATURE]
+
+Determine how this action should be audit-logged using the existing
+application-wide audit mechanism — do not hand-roll a feature-specific
+audit log if a shared one already exists.
+
+Verify the logged record captures:
+- who performed the action (actor)
+- which tenant/organization it belongs to
+- what resource was affected
+- what action was taken
+- a relevant identifier for that resource
+- timestamp
+- outcome (success/failure)
+- useful metadata — without leaking sensitive data into the log itself
+
+If the current architecture doesn't automatically capture this
+operation, extend the centralized audit mechanism so it does, rather
+than adding a parallel one just for this feature.
+
+Add a test proving the action actually produces an audit record, not
+just that the feature "works."`
+  },
+  {
+    id:"ENFORCE-10", cat:"enforce", catLabel:"Guardrails & Enforcement", title:"Client / Server Mirror",
+    tags:["optimistic ui","shared logic","frontend"],
+    blurb:"For logic that legitimately needs to run identically on both server and client (optimistic UI, feature-gate checks) without becoming two diverging implementations.",
+    body:`Review this functionality:
+
+[FUNCTIONALITY]
+
+Some of its logic needs to exist identically on both the server and the
+client (for example: optimistic UI, feature-gate checks that also drive
+what's shown in the sidebar).
+
+Separate clearly:
+- SERVER-ONLY RESPONSIBILITY — the actual authority; the thing that
+  can't be faked or bypassed
+- CLIENT-MIRROR RESPONSIBILITY — the same decision logic reused
+  client-side purely for UX (instant feedback, disabled buttons,
+  optimistic rendering)
+
+Create one reusable, shared representation of the decision logic that
+both sides consume — do not write the same business rule twice in two
+places that can silently drift apart.
+
+Hard rule: the client mirror is never the security authority. The
+server re-checks and enforces regardless of what the client already
+decided. If the two ever disagree, the server wins.
+
+Verify both sides are actually reading from the same underlying source,
+not two similar-looking copies.`
+  },
+  {
+    id:"ENFORCE-11", cat:"enforce", catLabel:"Guardrails & Enforcement", title:"Third-Party Adapter Boundary",
+    tags:["integration","vendor lock-in","adapter"],
+    blurb:"Lets you use a fast third-party provider (auth, editor, payments) without letting that provider's data model become your application's architecture.",
+    body:`Integrate:
+
+[THIRD-PARTY PROVIDER]
+
+First inspect any existing integration/adapter patterns already in the
+codebase.
+
+The provider must not become the application's internal source of
+truth. The rest of the application should depend on our own internal
+abstraction, not directly on the provider's specific API shapes.
+
+Design the adapter to account for:
+- authentication differences
+- mapping the provider's data model to ours (not the reverse)
+- error mapping — provider errors become our error types
+- retries / timeouts
+- rate limits imposed by the provider
+- idempotency where the provider doesn't guarantee it
+- observability (can we tell if the provider is degraded?)
+- what happens if this provider needs to be replaced later
+- how this gets tested without hitting the real provider every time
+
+Use the smallest adapter that gives meaningful decoupling — don't
+over-engineer a full plugin system for a provider you have no real plan
+to swap. Follow the existing adapter pattern if one already exists
+rather than inventing a second style.`
+  },
+  {
+    id:"ENFORCE-12", cat:"enforce", catLabel:"Guardrails & Enforcement", title:"Database Access Boundary",
+    tags:["database","persistence","layering"],
+    blurb:"One clear owner for persistence, so business logic never gets welded directly to a specific database or ORM's API shape.",
+    body:`Review database access in:
+
+[MODULE]
+
+The application should have one clear, consistent database-access
+boundary — a layer that owns persistence, with everything else going
+through it.
+
+Check whether:
+- controllers/handlers access persistence directly, skipping that layer
+- UI code has any dependency on persistence details
+- business logic is coupled to provider-specific database APIs instead
+  of the shared data-access layer
+- the same query logic is duplicated in more than one place
+- more than one competing data-access pattern exists in the codebase
+
+Establish or extend the canonical data-access pattern rather than
+introducing a new one.
+
+Non-negotiable rules:
+- business logic must not depend on provider-specific database APIs
+  directly — it depends on the data-access layer
+- tenant/organization scoping is enforced server-side, inside that
+  layer, not left to callers to remember
+- transaction boundaries are explicit, not implicit
+- query/repository behavior follows the established pattern for this
+  codebase, including for edge cases like soft deletes or audit fields
+
+Verify with tests and, if available, an architecture check that would
+fail if a new caller bypasses this layer.`
+  },
+  {
+    id:"FIX-05", cat:"fix", catLabel:"Debugging & Review", title:"Deep Production Debugging",
+    tags:["debugging","production","root cause","complex bug"],
+    blurb:"For gnarly, non-obvious production bugs — traces the full request path across every layer instead of guessing at the first plausible cause.",
+    body:`Investigate this production problem:
+
+[PROBLEM]
+
+Observed behavior:
+[OBSERVED]
+
+Expected behavior:
+[EXPECTED]
+
+Do not patch it yet.
+
+Trace the complete execution path:
+
+  INPUT → ENTRY POINT → GUARDRAILS → BUSINESS LOGIC → STATE →
+  DATABASE → EXTERNAL SYSTEMS → RESPONSE
+
+At each stage, actively consider:
+- is there a second, competing source of truth for this data?
+- stale cache or missing invalidation?
+- fallback/default logic silently overriding the real path?
+- singleton or shared state leaking between requests/users?
+- a race condition or transaction boundary problem?
+- wrong tenant/organization context at this stage?
+- an authorization check that's silently no-op-ing?
+- legacy code still wired in alongside the new implementation?
+- a hidden event handler or background job also touching this state?
+
+Find the actual root cause — do not stop at the first plausible
+explanation that would also explain the symptom.
+
+Then:
+1. State the root cause and the evidence for it.
+2. Explain why the current architecture allowed this to happen.
+3. Implement the minimal correct fix.
+4. Add regression protection (test, guard, or architecture rule).
+5. Search for the same root cause elsewhere in the codebase.
+6. Verify the original reported scenario is actually fixed.`
+  },
+  {
+    id:"QUALITY-01", cat:"quality", catLabel:"Production & Delivery", title:"Verification Before \"Done\"",
+    tags:["verification","definition of done","checklist"],
+    blurb:"Turns 'it should work' into an actual checklist Claude has to run through and report on before you consider a feature finished.",
+    body:`The implementation is complete.
+
+Switch to verification mode — do not assume it's correct just because
+it compiled once.
+
+Verify against:
+1. The original requirements
+2. Existing architecture and conventions
+3. Correct use of source-of-truth implementations (no quiet duplicates)
+4. Security
+5. Tenant isolation, if applicable
+6. Authorization
+7. Input validation
+8. Database behavior (transactions, constraints, migrations)
+9. Error handling
+10. Tests — do they exist, and do they cover failure paths too
+11. Edge cases
+12. UI behavior, if applicable — loading, empty, error states
+13. Performance (obvious N+1s, unnecessary re-fetches)
+14. No duplicate implementation was quietly created
+15. No legacy/competing architecture got reused by accident
+
+Run everything relevant: build/compile, type checks, lint, architecture
+checks, unit tests, integration tests, and end-to-end checks if
+available.
+
+If a check fails, fix the underlying cause — do not suppress the error
+just to get a clean report.
+
+Report:
+STATUS: PASS / WARNINGS / FAIL
+FILES CHANGED:
+CHECKS RUN:
+TEST RESULTS:
+ARCHITECTURAL CONCERNS:
+REMAINING WORK:`
+  },
+  {
+    id:"QUALITY-02", cat:"quality", catLabel:"Production & Delivery", title:"Production-Readiness Audit",
+    tags:["audit","release","security","reliability"],
+    blurb:"A wide-angle pass across architecture, security, data, reliability, performance, observability, and config — before something ships.",
+    body:`Perform a production-readiness audit of:
+
+[FEATURE / MODULE / APPLICATION]
+
+Do not modify anything yet — this is an inspection pass.
+
+ARCHITECTURE — patterns, source of truth, dependency direction,
+duplication, coupling
+
+SECURITY — authentication, authorization, tenant isolation,
+client/server boundaries, input validation, sensitive data exposure,
+IDOR risk, injection risk, SSRF risk where relevant
+
+DATA — transactions, constraints, indexes, migrations, concurrency,
+consistency
+
+RELIABILITY — timeouts, retries, idempotency, failure handling,
+external dependency resilience
+
+PERFORMANCE — database queries, N+1s, unnecessary work, caching,
+payload sizes
+
+OBSERVABILITY — logs, audit trail, metrics, error visibility
+
+TESTING — happy path, failure path, authorization, tenant isolation,
+regression coverage
+
+CONFIGURATION — environment config, secrets handling, hardcoded values,
+safe production defaults
+
+Classify every finding: CRITICAL / HIGH / MEDIUM / LOW
+
+For each one give:
+LOCATION:
+EVIDENCE:
+IMPACT:
+RECOMMENDED FIX:
+ARCHITECTURAL IMPACT:
+
+Do not fix anything yet — give me the prioritized remediation plan
+first so I can decide what's worth doing before a release.`
+  },
+  {
+    id:"QUALITY-03", cat:"quality", catLabel:"Production & Delivery", title:"Improve the Architectural Guardrail",
+    tags:["meta","periodic review","tech debt"],
+    blurb:"A periodic, not per-feature, review: audits how well the codebase itself is teaching Claude to behave, and where it's still relying on you to remember things.",
+    body:`Review this codebase specifically from the angle of AI-assisted
+development, not individual features.
+
+Ask: how could the repository itself make future AI-driven changes
+more predictable, without me having to repeat the same instructions
+every session?
+
+Find places where Claude currently has to rely on memory/context
+instead of something enforceable. Look specifically for opportunities
+to improve:
+- source-of-truth structures
+- type/schema safety
+- lint rules
+- architecture tests
+- the normalized entry point
+- server/client boundaries
+- tenant isolation enforcement
+- authorization enforcement
+- rate limiting
+- audit logging
+- adapters around third-party providers
+- reusable components
+- repository navigation / source-of-truth keywords
+- error signals (are failures loud and specific, or silent and vague?)
+- inline context at genuinely ambiguous points
+
+For each recommendation give:
+CURRENT PROBLEM:
+WHY CLAUDE COULD GET THIS WRONG:
+PROPOSED GUARDRAIL:
+ENFORCEMENT MECHANISM:
+COST:
+BENEFIT:
+
+Prioritize by leverage, not novelty — do not recommend adding
+complexity just because it sounds architecturally sophisticated.`
+  },
+  {
+    id:"CTRL-03", cat:"ctrl", catLabel:"Process & Safety", title:"Standing Guardrail Rules (paste into CLAUDE.md)",
+    tags:["claude.md","standing rules","permanent"],
+    blurb:"Not a one-off prompt — a permanent block of rules meant to live in CLAUDE.md so you stop re-explaining them every session.",
+    body:`ARCHITECTURAL RULE — DON'T INVENT ARCHITECTURE
+Do not invent a new architecture when an established pattern already
+exists. Before implementing a feature: search for the closest existing
+pattern, identify its source of truth, reuse it, extend it if
+appropriate. If no suitable pattern exists, say so explicitly, explain
+why the existing patterns can't support the requirement, and propose
+the smallest new pattern rather than a new library, framework, or
+data-flow mechanism just because it's personally preferable.
+
+TYPE / SCHEMA RULE — DON'T DUPLICATE TYPES
+Before creating a type, interface, schema, DTO, or model: search for an
+existing source-of-truth definition first, and prefer generated or
+canonical types over hand-written ones. Never use an escape hatch
+("any", "unknown", unchecked casts) without explicit justification.
+Never suppress a type error just to finish a task — type errors are
+architectural feedback, not noise.
+
+DISCOVERY RULE — SEARCH BEFORE BUILD
+Before creating a function, service, type, constant, component, API
+endpoint, utility, adapter, database model, permission, or feature
+gate: search the repository first. Reuse a suitable existing
+implementation. If multiple implementations already exist, identify
+which one is canonical instead of adding a third. Only create something
+new when the existing architecture genuinely cannot support the
+requirement.
+
+GLOBALIZATION RULE — DON'T OVER-ABSTRACT EARLY
+Do not globalize code just because it might be reusable someday.
+Globalize when the concept is a real domain/application concern,
+multiple consumers genuinely need the same behavior, duplication would
+create inconsistent behavior, or a single source of truth provides
+clear value. When you do globalize: keep the interface simple, avoid
+coupling unrelated consumers together, and keep provider-specific
+details hidden behind it.
+
+PROCESS RULE — STAY IN CONTROL
+Work only on the current feature/branch. Do not modify unrelated files.
+Do not manipulate git history, revert unrelated changes, or use
+destructive git commands without asking first. Before making an
+architectural change, inspect existing patterns. After implementation,
+report every file changed. Do not leave required work half-finished.
+Do not silently expand scope — if you notice an unrelated problem,
+report it separately instead of fixing it inline unless it blocks the
+current feature. Always verify the final state with the project's
+build, tests, type checks, lint, and architecture checks.`
+  },
+  {
+    id:"STACK-01", cat:"stack", catLabel:"For MTA ERP (Spring Boot)", title:"Domain Feature — Spring Modulith Flavor",
+    tags:["spring boot","modulith","archunit","java"],
+    blurb:"The daily-driver prompt translated into Spring Boot / Modulith terms — module boundaries, ArchUnit, and the posting/reversal chain instead of a generic entry-point block.",
+    body:`Implement:
+
+[FEATURE]
+
+Example of the kind of feature this fits: "Purchase Returns" — something
+that touches inventory, tax, and accounting posting together, not a
+single isolated CRUD screen.
+
+This is MTA ERP — Java 21 / Spring Boot, Domain-Driven Modular Monolith
+on Spring Modulith, shared-schema multi-tenancy, Flyway-only schema
+management, UUID v7 keys, BigDecimal for all financials.
+
+Before writing code:
+1. Inspect the existing modules this feature touches or depends on
+   (e.g. Purchase, Inventory Movement, Vendor, Tax/GST, Accounting
+   Posting) and identify their established patterns.
+2. Identify the correct module boundary for this feature under Spring
+   Modulith — do not let it reach into another module's internals; go
+   through that module's public API/events only.
+3. Identify the dependency/prerequisite chain — what must be posted,
+   reversed, or reconciled, and in what order, for this to be
+   financially and operationally correct.
+4. Reuse the established transaction boundary and posting pattern — do
+   not create a second way of writing accounting entries.
+
+Non-negotiables for this codebase:
+- tenant scoping is enforced in the data-access layer, never inferred
+  from client input
+- all monetary values use BigDecimal — no float/double anywhere in this
+  path
+- schema changes go through a new Flyway migration only, never a
+  direct/manual schema edit
+- new module boundaries must satisfy the existing ArchUnit rules — run
+  them before considering this done, not just the standard build
+
+Implement the complete feature, including the reversal/adjustment
+effects on inventory and accounting, not just the primary happy path.
+
+After implementation:
+- build
+- run ArchUnit / architecture tests
+- run unit + integration tests covering the posting and reversal logic
+- verify tenant isolation on every new query
+
+Report: files changed, modules touched, patterns reused, new sources of
+truth (if any), verification performed, and any financial edge cases
+still unhandled.`
+  },
+  {
+    id:"STACK-02", cat:"stack", catLabel:"For MTA ERP (Spring Boot)", title:"Turn a Module Rule Into an ArchUnit Test",
+    tags:["spring boot","archunit","enforcement","java"],
+    blurb:"Turns a module-boundary or layering rule into an actual ArchUnit test instead of a comment in CLAUDE.md that quietly erodes over time.",
+    body:`Here is a module/layering rule I want enforced, not just documented:
+
+[RULE]
+
+Example: "the Inventory module must never be called directly from a
+Controller; it must go through the Inventory module's public API."
+
+Write or extend an ArchUnit test that enforces this rule directly
+against the compiled codebase.
+
+Requirements:
+- the test should fail loudly and specifically if the rule is violated
+  — the failure message should make it obvious which class and which
+  rule was broken
+- prefer testing the rule at the module/package level (Spring Modulith
+  module boundaries) over naming-convention-only checks
+- add the test to the existing ArchUnit suite rather than creating a
+  separate, easy-to-forget test class
+
+Then deliberately introduce a one-line violation of this rule in a
+throwaway branch to confirm the test actually catches it, show me the
+failure, then revert the violation and confirm the suite passes clean.`
+  }
+];
+
+const CAT_ORDER = ["start","map","build","guard","enforce","fix","quality","ctrl","stack"];
+const CAT_LABELS = {
+  start:"Getting Started",
+  map:"Understanding a Codebase",
+  build:"Building Features",
+  guard:"Architecture Hygiene",
+  enforce:"Guardrails & Enforcement",
+  fix:"Debugging & Review",
+  quality:"Production & Delivery",
+  ctrl:"Process & Safety",
+  stack:"For MTA ERP (Spring Boot)"
+};
+
+const navEl = document.getElementById('nav');
+const cardsRoot = document.getElementById('cardsRoot');
+const searchEl = document.getElementById('search');
+
+function escapeHtml(str){
+  return str.replace(/[&<>"']/g, s => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[s]));
+}
+
+/* Robust clipboard copy: uses the async Clipboard API when available in a
+   secure context (https/localhost), otherwise falls back to a hidden
+   textarea + execCommand, which also works when the file is opened
+   directly from disk (file://) where navigator.clipboard is often
+   unavailable or undefined. */
+function copyText(text){
+  return new Promise((resolve, reject) => {
+    if(window.isSecureContext && navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(resolve).catch(() => fallbackCopy(text, resolve, reject));
+    } else {
+      fallbackCopy(text, resolve, reject);
+    }
+  });
+}
+
+function fallbackCopy(text, resolve, reject){
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '0';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if(ok) resolve(); else reject(new Error('execCommand copy returned false'));
+  }catch(err){
+    reject(err);
+  }
+}
+
+function highlight(text, query){
+  const safe = escapeHtml(text);
+  if(!query) return safe;
+  try{
+    const re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'ig');
+    return safe.replace(re, '<mark>$1</mark>');
+  }catch(e){ return safe; }
+}
+
+function highlightPromptBody(text, query){
+  let safe = escapeHtml(text);
+  safe = safe.replace(/\[([A-Z0-9 \/&\-]+)\]/g, '<span class="ph">[$1]</span>');
+  if(query){
+    try{
+      const re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'ig');
+      safe = safe.replace(re, m => '<mark>' + m + '</mark>');
+    }catch(e){}
+  }
+  return safe;
+}
+
+function matches(item, q){
+  if(!q) return true;
+  const hay = (item.title + ' ' + item.blurb + ' ' + item.tags.join(' ') + ' ' + item.body).toLowerCase();
+  return hay.includes(q.toLowerCase());
+}
+
+function buildNav(query){
+  navEl.innerHTML = '';
+  CAT_ORDER.forEach(cat => {
+    const items = PROMPTS.filter(p => p.cat === cat && matches(p, query));
+    const group = document.createElement('div');
+    group.className = 'group' + (items.length === 0 ? ' hidden' : '');
+    const label = document.createElement('div');
+    label.className = 'group-label';
+    label.textContent = CAT_LABELS[cat];
+    group.appendChild(label);
+    items.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'nav-item';
+      btn.dataset.id = p.id;
+      btn.innerHTML = '<span class="nav-id">' + p.id + '</span><span>' + highlight(p.title, query) + '</span>';
+      btn.addEventListener('click', () => {
+        const target = document.getElementById('card-' + p.id);
+        if(target){
+          if(window.innerWidth <= 880) closeSidebar();
+          target.scrollIntoView({behavior:'smooth', block:'start'});
+          target.classList.add('flash');
+          setTimeout(()=>target.classList.remove('flash'), 1200);
+        }
+      });
+      group.appendChild(btn);
+    });
+    navEl.appendChild(group);
+  });
+}
+
+function copyIcon(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+}
+function checkIcon(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+}
+function editIcon(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+}
+
+/* build the editable HTML for a prompt body: escape it, then wrap [PLACEHOLDERS] in .ph spans */
+function bodyToEditableHtml(text){
+  const safe = escapeHtml(text);
+  return safe.replace(/\[([A-Z0-9 \/&\-]+)\]/g, '<span class="ph">[$1]</span>');
+}
+
+function buildCards(query){
+  cardsRoot.innerHTML = '';
+  let totalVisible = 0;
+
+  CAT_ORDER.forEach(cat => {
+    const items = PROMPTS.filter(p => p.cat === cat && matches(p, query));
+    if(items.length === 0) return;
+    totalVisible += items.length;
+
+    const groupWrap = document.createElement('div');
+    groupWrap.className = 'content-group';
+
+    const groupTitle = document.createElement('div');
+    groupTitle.className = 'content-group-title';
+    groupTitle.textContent = CAT_LABELS[cat];
+    groupWrap.appendChild(groupTitle);
+
+    items.forEach(p => {
+      const card = document.createElement('article');
+      card.className = 'card';
+      card.id = 'card-' + p.id;
+
+      card.innerHTML = `
+        <div class="card-head">
+          <div>
+            <div class="card-title-row">
+              <span class="card-id">${p.id}</span>
+              <h3 class="card-title">${highlight(p.title, query)}</h3>
+            </div>
+            <p class="card-blurb">${highlight(p.blurb, query)}</p>
+            <div class="card-tags">${p.tags.map(t => '<span class="tag">#' + escapeHtml(t) + '</span>').join('')}</div>
+          </div>
+          <div class="card-actions">
+            <button class="edit-btn" type="button">${editIcon()}<span>Edit</span></button>
+            <button class="copy-btn" type="button">${copyIcon()}<span>Copy</span></button>
+          </div>
+        </div>
+        <div class="card-body">
+          <pre class="prompt-block">${highlightPromptBody(p.body, query)}</pre>
+        </div>
+      `;
+
+      const editBtn = card.querySelector('.edit-btn');
+      editBtn.addEventListener('click', () => openEditor(p));
+
+      const btn = card.querySelector('.copy-btn');
+      btn.addEventListener('click', () => {
+        copyText(p.body).then(() => {
+          btn.classList.add('copied');
+          btn.innerHTML = checkIcon() + '<span>Copied</span>';
+          setTimeout(() => {
+            btn.classList.remove('copied');
+            btn.innerHTML = copyIcon() + '<span>Copy</span>';
+          }, 1600);
+        }).catch(() => {
+          alert('Could not copy automatically — select the text and copy manually.');
+        });
+      });
+
+      groupWrap.appendChild(card);
+    });
+
+    cardsRoot.appendChild(groupWrap);
+  });
+
+  if(totalVisible === 0){
+    const empty = document.createElement('div');
+    empty.className = 'no-results';
+    empty.textContent = '// no prompts match "' + query + '"';
+    cardsRoot.appendChild(empty);
+  }
+}
+
+function render(){
+  const q = searchEl.value.trim();
+  buildNav(q);
+  buildCards(q);
+}
+
+searchEl.addEventListener('input', render);
+
+document.addEventListener('keydown', (e) => {
+  if(e.key === '/' && document.activeElement !== searchEl){
+    e.preventDefault();
+    searchEl.focus();
+  }
+  if(e.key === 'Escape' && document.activeElement === searchEl){
+    searchEl.value = '';
+    render();
+    searchEl.blur();
+  }
+});
+
+/* ---------------- EDITOR MODAL LOGIC ---------------- */
+const modalOverlay = document.getElementById('modalOverlay');
+const modalId = document.getElementById('modalId');
+const modalTitle = document.getElementById('modalTitle');
+const editorArea = document.getElementById('editorArea');
+const modalCloseBtn = document.getElementById('modalCloseBtn');
+const modalCopyBtn = document.getElementById('modalCopyBtn');
+const resetBtn = document.getElementById('resetBtn');
+
+let activePrompt = null;
+let originalEditableHtml = '';
+
+function openEditor(promptObj){
+  activePrompt = promptObj;
+  modalId.textContent = promptObj.id;
+  modalTitle.textContent = promptObj.title;
+  originalEditableHtml = bodyToEditableHtml(promptObj.body);
+  editorArea.innerHTML = originalEditableHtml;
+  modalOverlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => editorArea.focus(), 50);
+}
+
+function isDirty(){
+  return editorArea.innerHTML !== originalEditableHtml;
+}
+
+function forceCloseEditor(){
+  modalOverlay.classList.remove('open');
+  document.body.style.overflow = '';
+  activePrompt = null;
+}
+
+function attemptCloseEditor(){
+  if(isDirty()){
+    const discard = confirm('You have unsaved edits on "' + (activePrompt ? activePrompt.title : 'this prompt') + '".\n\nDiscard these changes and close without copying?');
+    if(!discard) return; // stay open
+  }
+  forceCloseEditor();
+}
+
+resetBtn.addEventListener('click', () => {
+  editorArea.innerHTML = originalEditableHtml;
+  editorArea.focus();
+});
+
+modalCloseBtn.addEventListener('click', attemptCloseEditor);
+
+modalOverlay.addEventListener('click', (e) => {
+  if(e.target === modalOverlay) attemptCloseEditor();
+});
+
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && modalOverlay.classList.contains('open')){
+    attemptCloseEditor();
+  }
+});
+
+modalCopyBtn.addEventListener('click', () => {
+  const finalText = editorArea.textContent;
+  copyText(finalText).then(() => {
+    forceCloseEditor();
+  }).catch(() => {
+    alert('Could not copy automatically — select the text in the box and copy manually (Ctrl/Cmd+A, then Ctrl/Cmd+C).');
+  });
+});
+
+/* mobile sidebar */
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('overlay');
+const menuBtn = document.getElementById('menuBtn');
+function openSidebar(){ sidebar.classList.add('open'); overlay.classList.add('open'); }
+function closeSidebar(){ sidebar.classList.remove('open'); overlay.classList.remove('open'); }
+menuBtn.addEventListener('click', openSidebar);
+overlay.addEventListener('click', closeSidebar);
+
+render();
+</script>
+</body>
+</html>
